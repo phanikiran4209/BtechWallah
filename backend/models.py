@@ -67,6 +67,12 @@ class InvoiceBase(BaseModel):
     due_date: str
     status: str = "pending"  # pending, paid, overdue
     description: Optional[str] = None
+    company_name: Optional[str] = None
+    agent_name: Optional[str] = None
+    agent_phone: Optional[str] = None
+    agent_email: Optional[str] = None
+    hours: Optional[float] = None
+    rate: Optional[float] = None
 
 class InvoiceCreate(InvoiceBase):
     pass
@@ -78,6 +84,12 @@ class InvoiceUpdate(BaseModel):
     due_date: Optional[str] = None
     status: Optional[str] = None
     description: Optional[str] = None
+    company_name: Optional[str] = None
+    agent_name: Optional[str] = None
+    agent_phone: Optional[str] = None
+    agent_email: Optional[str] = None
+    hours: Optional[float] = None
+    rate: Optional[float] = None
 
 class Invoice(InvoiceBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
