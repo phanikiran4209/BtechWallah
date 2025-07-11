@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { mockData } from "../data/mockData";
+import { dashboardApi } from "../services/api";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -10,19 +10,65 @@ const Dashboard = () => {
   });
   const [recentClients, setRecentClients] = useState([]);
   const [recentProjects, setRecentProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setStats({
-        totalClients: mockData.clients.length,
-        activeProjects: mockData.projects.filter(p => p.status === 'active').length,
-        totalRevenue: mockData.projects.reduce((sum, p) => sum + p.budget, 0)
-      });
-      setRecentClients(mockData.clients.slice(0, 5));
-      setRecentProjects(mockData.projects.slice(0, 5));
-    }, 500);
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const data = await dashboardApi.getStats();
+      setStats({
+        totalClients: data.total_clients,
+        activeProjects: data.active_projects,
+        totalRevenue: data.total_revenue
+      });
+      setRecentClients(data.recent_clients);
+      setRecentProjects(data.recent_projects);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-container">
+          <div className="loading">Loading dashboard...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-container">
+          <div className="error">
+            <p>{error}</p>
+            <button onClick={loadDashboardData}>Retry</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -68,6 +114,7 @@ const Dashboard = () => {
                     <div className="recent-item-info">
                       <h4>{client.name}</h4>
                       <p>{client.email}</p>
+                      <small>Joined: {formatDate(client.join_date)}</small>
                     </div>
                   </div>
                 ))

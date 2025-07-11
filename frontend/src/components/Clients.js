@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { mockData } from "../data/mockData";
+import { clientApi } from "../services/api";
 import "./Clients.css";
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -11,21 +13,40 @@ const Clients = () => {
     phone: '',
     company: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setClients(mockData.clients);
+    loadClients();
   }, []);
 
-  const handleSubmit = (e) => {
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const data = await clientApi.getAll();
+      setClients(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading clients:', err);
+      setError('Failed to load clients');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newClient = {
-      id: Date.now(),
-      ...formData,
-      joinDate: new Date().toISOString().split('T')[0]
-    };
-    setClients([newClient, ...clients]);
-    setFormData({ name: '', email: '', phone: '', company: '' });
-    setShowForm(false);
+    try {
+      setSubmitting(true);
+      await clientApi.create(formData);
+      setFormData({ name: '', email: '', phone: '', company: '' });
+      setShowForm(false);
+      await loadClients(); // Reload clients
+    } catch (err) {
+      console.error('Error creating client:', err);
+      setError('Failed to create client');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -34,6 +55,38 @@ const Clients = () => {
       [e.target.name]: e.target.value
     });
   };
+
+  const handleDelete = async (clientId) => {
+    if (window.confirm('Are you sure you want to delete this client?')) {
+      try {
+        await clientApi.delete(clientId);
+        await loadClients(); // Reload clients
+      } catch (err) {
+        console.error('Error deleting client:', err);
+        setError('Failed to delete client');
+      }
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="clients">
+        <div className="clients-container">
+          <div className="loading">Loading clients...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="clients">
@@ -47,6 +100,13 @@ const Clients = () => {
             + Add Client
           </button>
         </div>
+
+        {error && (
+          <div className="error-message">
+            <p>{error}</p>
+            <button onClick={loadClients}>Retry</button>
+          </div>
+        )}
 
         {showForm && (
           <div className="client-form-container">
@@ -90,7 +150,9 @@ const Clients = () => {
                 />
               </div>
               <div className="form-actions">
-                <button type="submit">Add Client</button>
+                <button type="submit" disabled={submitting}>
+                  {submitting ? 'Adding...' : 'Add Client'}
+                </button>
                 <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
               </div>
             </form>
@@ -106,13 +168,27 @@ const Clients = () => {
               <div className="client-info">
                 <h3>{client.name}</h3>
                 <p>{client.email}</p>
-                <p>{client.phone}</p>
-                <p>{client.company}</p>
-                <small>Joined: {client.joinDate}</small>
+                {client.phone && <p>{client.phone}</p>}
+                {client.company && <p>{client.company}</p>}
+                <small>Joined: {formatDate(client.join_date)}</small>
+              </div>
+              <div className="client-actions">
+                <button 
+                  className="delete-btn"
+                  onClick={() => handleDelete(client.id)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
         </div>
+
+        {clients.length === 0 && !loading && (
+          <div className="empty-state">
+            <p>No clients found. Add your first client to get started!</p>
+          </div>
+        )}
       </div>
     </div>
   );
