@@ -103,6 +103,12 @@
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
+.form-actions button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .form-actions button[type="button"] {
   background: #f3f4f6;
   color: #374151;
@@ -125,6 +131,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border: 1px solid #f1f5f9;
+  position: relative;
 }
 
 .client-card:hover {
@@ -162,6 +169,51 @@
 .client-info small {
   color: #94a3b8;
   font-size: 0.85rem;
+}
+
+.client-actions {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.loading, .error-message, .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.error-message button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-top: 10px;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {

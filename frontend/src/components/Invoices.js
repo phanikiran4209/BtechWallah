@@ -1,42 +1,65 @@
 import React, { useState, useEffect } from "react";
-import { mockData } from "../data/mockData";
+import { invoiceApi } from "../services/api";
 import "./Invoices.css";
 
 const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     client: '',
     project: '',
     amount: '',
-    dueDate: '',
+    due_date: '',
     status: 'pending',
     description: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setInvoices(mockData.invoices);
+    loadInvoices();
   }, []);
 
-  const handleSubmit = (e) => {
+  const loadInvoices = async () => {
+    try {
+      setLoading(true);
+      const data = await invoiceApi.getAll();
+      setInvoices(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading invoices:', err);
+      setError('Failed to load invoices');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newInvoice = {
-      id: Date.now(),
-      ...formData,
-      amount: parseFloat(formData.amount) || 0,
-      createdDate: new Date().toISOString().split('T')[0],
-      invoiceNumber: `INV-${Date.now()}`
-    };
-    setInvoices([newInvoice, ...invoices]);
-    setFormData({
-      client: '',
-      project: '',
-      amount: '',
-      dueDate: '',
-      status: 'pending',
-      description: ''
-    });
-    setShowForm(false);
+    try {
+      setSubmitting(true);
+      const invoiceData = {
+        ...formData,
+        amount: parseFloat(formData.amount) || 0
+      };
+      await invoiceApi.create(invoiceData);
+      setFormData({
+        client: '',
+        project: '',
+        amount: '',
+        due_date: '',
+        status: 'pending',
+        description: ''
+      });
+      setShowForm(false);
+      await loadInvoices(); // Reload invoices
+    } catch (err) {
+      console.error('Error creating invoice:', err);
+      setError('Failed to create invoice');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -46,11 +69,47 @@ const Invoices = () => {
     });
   };
 
-  const updateInvoiceStatus = (id, newStatus) => {
-    setInvoices(invoices.map(invoice => 
-      invoice.id === id ? { ...invoice, status: newStatus } : invoice
-    ));
+  const handleDelete = async (invoiceId) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      try {
+        await invoiceApi.delete(invoiceId);
+        await loadInvoices(); // Reload invoices
+      } catch (err) {
+        console.error('Error deleting invoice:', err);
+        setError('Failed to delete invoice');
+      }
+    }
   };
+
+  const updateInvoiceStatus = async (invoiceId, newStatus) => {
+    try {
+      await invoiceApi.update(invoiceId, { status: newStatus });
+      await loadInvoices(); // Reload invoices
+    } catch (err) {
+      console.error('Error updating invoice status:', err);
+      setError('Failed to update invoice status');
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="invoices">
+        <div className="invoices-container">
+          <div className="loading">Loading invoices...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="invoices">
@@ -64,6 +123,13 @@ const Invoices = () => {
             + Create Invoice
           </button>
         </div>
+
+        {error && (
+          <div className="error-message">
+            <p>{error}</p>
+            <button onClick={loadInvoices}>Retry</button>
+          </div>
+        )}
 
         {showForm && (
           <div className="invoice-form-container">
@@ -105,8 +171,8 @@ const Invoices = () => {
                   <label>Due Date</label>
                   <input
                     type="date"
-                    name="dueDate"
-                    value={formData.dueDate}
+                    name="due_date"
+                    value={formData.due_date}
                     onChange={handleInputChange}
                     required
                   />
@@ -134,7 +200,9 @@ const Invoices = () => {
                 />
               </div>
               <div className="form-actions">
-                <button type="submit">Create Invoice</button>
+                <button type="submit" disabled={submitting}>
+                  {submitting ? 'Creating...' : 'Create Invoice'}
+                </button>
                 <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
               </div>
             </form>
@@ -146,7 +214,7 @@ const Invoices = () => {
             <div key={invoice.id} className="invoice-card">
               <div className="invoice-header">
                 <div className="invoice-number">
-                  <h3>{invoice.invoiceNumber}</h3>
+                  <h3>{invoice.invoice_number}</h3>
                   <p>{invoice.client}</p>
                 </div>
                 <div className="invoice-amount">
@@ -155,8 +223,8 @@ const Invoices = () => {
               </div>
               <div className="invoice-info">
                 <p><strong>Project:</strong> {invoice.project}</p>
-                <p><strong>Due Date:</strong> {invoice.dueDate}</p>
-                <p><strong>Created:</strong> {invoice.createdDate}</p>
+                <p><strong>Due Date:</strong> {formatDate(invoice.due_date)}</p>
+                <p><strong>Created:</strong> {formatDate(invoice.created_date)}</p>
                 {invoice.description && <p><strong>Description:</strong> {invoice.description}</p>}
               </div>
               <div className="invoice-actions">
@@ -174,9 +242,21 @@ const Invoices = () => {
                     Overdue
                   </button>
                 </div>
+                <button 
+                  className="delete-btn"
+                  onClick={() => handleDelete(invoice.id)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
+        </div>
+
+        {invoices.length === 0 && !loading && (
+          <div className="empty-state">
+            <p>No invoices found. Create your first invoice to get started!</p>
+          </div>
         </div>
       </div>
     </div>
