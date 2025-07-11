@@ -47,9 +47,29 @@
   border: 1px solid #f1f5f9;
 }
 
+.invoice-form h3 {
+  margin: 0 0 20px 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+}
+
 .invoice-form {
   display: grid;
   gap: 20px;
+}
+
+.form-section {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.form-section h4 {
+  margin: 0 0 15px 0;
+  color: #374151;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .form-row {
@@ -116,6 +136,12 @@
 .form-actions button[type="submit"]:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.form-actions button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .form-actions button[type="button"] {
@@ -236,6 +262,48 @@
   color: #374151;
 }
 
+.status-actions button:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.generate-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.generate-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.edit-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
 .delete-btn {
   background: #ef4444;
   color: white;
@@ -313,6 +381,10 @@
   }
   
   .status-actions {
+    justify-content: center;
+  }
+  
+  .action-buttons {
     justify-content: center;
   }
 }

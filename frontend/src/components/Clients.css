@@ -47,6 +47,12 @@
   border: 1px solid #f1f5f9;
 }
 
+.client-form h3 {
+  margin: 0 0 20px 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+}
+
 .client-form {
   display: grid;
   gap: 20px;
@@ -172,9 +178,25 @@
 }
 
 .client-actions {
-  position: absolute;
-  top: 15px;
-  right: 15px;
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.edit-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+  background: #d97706;
+  transform: translateY(-1px);
 }
 
 .delete-btn {
