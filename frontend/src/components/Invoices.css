@@ -236,9 +236,43 @@
   color: #374151;
 }
 
-.status-actions button:hover {
-  background: #e5e7eb;
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
   transform: translateY(-1px);
+}
+
+.loading, .error-message, .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.error-message button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-top: 10px;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {
