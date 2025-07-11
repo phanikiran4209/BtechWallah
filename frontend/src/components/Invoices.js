@@ -257,7 +257,7 @@ const Invoices = () => {
           <div className="empty-state">
             <p>No invoices found. Create your first invoice to get started!</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
