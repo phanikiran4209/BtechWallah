@@ -7,6 +7,7 @@ const Clients = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -37,16 +38,36 @@ const Clients = () => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await clientApi.create(formData);
-      setFormData({ name: '', email: '', phone: '', company: '' });
-      setShowForm(false);
-      await loadClients(); // Reload clients
+      if (editingClient) {
+        await clientApi.update(editingClient.id, formData);
+      } else {
+        await clientApi.create(formData);
+      }
+      resetForm();
+      await loadClients();
     } catch (err) {
-      console.error('Error creating client:', err);
-      setError('Failed to create client');
+      console.error('Error saving client:', err);
+      setError('Failed to save client');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', email: '', phone: '', company: '' });
+    setEditingClient(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (client) => {
+    setEditingClient(client);
+    setFormData({
+      name: client.name,
+      email: client.email,
+      phone: client.phone || '',
+      company: client.company || ''
+    });
+    setShowForm(true);
   };
 
   const handleInputChange = (e) => {
@@ -60,7 +81,7 @@ const Clients = () => {
     if (window.confirm('Are you sure you want to delete this client?')) {
       try {
         await clientApi.delete(clientId);
-        await loadClients(); // Reload clients
+        await loadClients();
       } catch (err) {
         console.error('Error deleting client:', err);
         setError('Failed to delete client');
@@ -111,6 +132,7 @@ const Clients = () => {
         {showForm && (
           <div className="client-form-container">
             <form onSubmit={handleSubmit} className="client-form">
+              <h3>{editingClient ? 'Edit Client' : 'Add New Client'}</h3>
               <div className="form-group">
                 <label>Name</label>
                 <input
@@ -151,9 +173,9 @@ const Clients = () => {
               </div>
               <div className="form-actions">
                 <button type="submit" disabled={submitting}>
-                  {submitting ? 'Adding...' : 'Add Client'}
+                  {submitting ? 'Saving...' : (editingClient ? 'Update Client' : 'Add Client')}
                 </button>
-                <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="button" onClick={resetForm}>Cancel</button>
               </div>
             </form>
           </div>
@@ -173,6 +195,12 @@ const Clients = () => {
                 <small>Joined: {formatDate(client.join_date)}</small>
               </div>
               <div className="client-actions">
+                <button 
+                  className="edit-btn"
+                  onClick={() => handleEdit(client)}
+                >
+                  Edit
+                </button>
                 <button 
                   className="delete-btn"
                   onClick={() => handleDelete(client.id)}

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { projectApi } from "../services/api";
+import { projectApi, clientApi } from "../services/api";
 import "./Projects.css";
 
 const Projects = () => {
   const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     client: '',
@@ -20,6 +22,7 @@ const Projects = () => {
 
   useEffect(() => {
     loadProjects();
+    loadClients();
   }, []);
 
   const loadProjects = async () => {
@@ -36,6 +39,15 @@ const Projects = () => {
     }
   };
 
+  const loadClients = async () => {
+    try {
+      const data = await clientApi.getAll();
+      setClients(data);
+    } catch (err) {
+      console.error('Error loading clients:', err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -44,24 +56,49 @@ const Projects = () => {
         ...formData,
         budget: parseFloat(formData.budget) || 0
       };
-      await projectApi.create(projectData);
-      setFormData({
-        name: '',
-        client: '',
-        budget: '',
-        start_date: '',
-        end_date: '',
-        status: 'active',
-        description: ''
-      });
-      setShowForm(false);
-      await loadProjects(); // Reload projects
+      
+      if (editingProject) {
+        await projectApi.update(editingProject.id, projectData);
+      } else {
+        await projectApi.create(projectData);
+      }
+      
+      resetForm();
+      await loadProjects();
     } catch (err) {
-      console.error('Error creating project:', err);
-      setError('Failed to create project');
+      console.error('Error saving project:', err);
+      setError('Failed to save project');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      client: '',
+      budget: '',
+      start_date: '',
+      end_date: '',
+      status: 'active',
+      description: ''
+    });
+    setEditingProject(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (project) => {
+    setEditingProject(project);
+    setFormData({
+      name: project.name,
+      client: project.client,
+      budget: project.budget.toString(),
+      start_date: project.start_date,
+      end_date: project.end_date || '',
+      status: project.status,
+      description: project.description || ''
+    });
+    setShowForm(true);
   };
 
   const handleInputChange = (e) => {
@@ -75,7 +112,7 @@ const Projects = () => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
         await projectApi.delete(projectId);
-        await loadProjects(); // Reload projects
+        await loadProjects();
       } catch (err) {
         console.error('Error deleting project:', err);
         setError('Failed to delete project');
@@ -86,7 +123,7 @@ const Projects = () => {
   const handleStatusChange = async (projectId, newStatus) => {
     try {
       await projectApi.update(projectId, { status: newStatus });
-      await loadProjects(); // Reload projects
+      await loadProjects();
     } catch (err) {
       console.error('Error updating project status:', err);
       setError('Failed to update project status');
@@ -101,6 +138,11 @@ const Projects = () => {
     } catch (error) {
       return dateString;
     }
+  };
+
+  const getClientName = (clientId) => {
+    const client = clients.find(c => c.id === clientId);
+    return client ? client.name : clientId;
   };
 
   if (loading) {
@@ -136,6 +178,7 @@ const Projects = () => {
         {showForm && (
           <div className="project-form-container">
             <form onSubmit={handleSubmit} className="project-form">
+              <h3>{editingProject ? 'Edit Project' : 'Add New Project'}</h3>
               <div className="form-row">
                 <div className="form-group">
                   <label>Project Name</label>
@@ -149,13 +192,19 @@ const Projects = () => {
                 </div>
                 <div className="form-group">
                   <label>Client</label>
-                  <input
-                    type="text"
+                  <select
                     name="client"
                     value={formData.client}
                     onChange={handleInputChange}
                     required
-                  />
+                  >
+                    <option value="">Select a client</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="form-row">
@@ -214,9 +263,9 @@ const Projects = () => {
               </div>
               <div className="form-actions">
                 <button type="submit" disabled={submitting}>
-                  {submitting ? 'Adding...' : 'Add Project'}
+                  {submitting ? 'Saving...' : (editingProject ? 'Update Project' : 'Add Project')}
                 </button>
-                <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="button" onClick={resetForm}>Cancel</button>
               </div>
             </form>
           </div>
@@ -232,7 +281,7 @@ const Projects = () => {
                 </span>
               </div>
               <div className="project-info">
-                <p><strong>Client:</strong> {project.client}</p>
+                <p><strong>Client:</strong> {getClientName(project.client)}</p>
                 <p><strong>Budget:</strong> ${project.budget.toLocaleString()}</p>
                 <p><strong>Start Date:</strong> {formatDate(project.start_date)}</p>
                 {project.end_date && <p><strong>End Date:</strong> {formatDate(project.end_date)}</p>}
@@ -250,12 +299,20 @@ const Projects = () => {
                     On Hold
                   </button>
                 </div>
-                <button 
-                  className="delete-btn"
-                  onClick={() => handleDelete(project.id)}
-                >
-                  Delete
-                </button>
+                <div className="action-buttons">
+                  <button 
+                    className="edit-btn"
+                    onClick={() => handleEdit(project)}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    className="delete-btn"
+                    onClick={() => handleDelete(project.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}
